@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archäologischer Stempel-Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .position-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                🏛️ Archäologischer Stempel-Finder
+            </h1>
+            <p class="text-gray-600">
+                Südgallische Terra Sigillata aus Vechten - Positionsbasierte Suche
+            </p>
+        </div>
+
+        <!-- Suchbereich -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <!-- Umrahmungsfilter -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    Umrahmung filtern:
+                </label>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="setFrameFilter('alle')" id="filter-alle" class="px-4 py-2 rounded-lg transition-all bg-amber-500 text-white shadow-md">
+                        Alle anzeigen
+                    </button>
+                    <button onclick="setFrameFilter('rechteckig')" id="filter-rechteckig" class="px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="18" height="18" stroke-width="2" rx="2"/>
+                        </svg>
+                        Rechteckig
+                    </button>
+                    <button onclick="setFrameFilter('rund')" id="filter-rund" class="px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                        </svg>
+                        Rund
+                    </button>
+                    <button onclick="setFrameFilter('keine')" id="filter-keine" class="px-4 py-2 rounded-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200">
+                        Keine Umrahmung
+                    </button>
+                </div>
+            </div>
+
+            <!-- Längenauswahl -->
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    Anzahl der Buchstaben im Stempel:
+                </label>
+                <input type="range" min="2" max="10" value="7" id="lengthSlider" 
+                       class="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer"
+                       onchange="updateLength(this.value)">
+                <div class="text-center mt-2">
+                    <span class="text-2xl font-bold text-amber-600" id="lengthDisplay">7</span>
+                    <span class="text-gray-600 ml-2">Buchstaben</span>
+                </div>
+            </div>
+
+            <!-- Positionseingabe -->
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    Bekannte Buchstaben an ihren Positionen:
+                </label>
+                <div class="flex flex-wrap gap-2 justify-center" id="positionInputs">
+                    <!-- Wird dynamisch gefüllt -->
+                </div>
+            </div>
+
+            <!-- Reset Buttons -->
+            <div class="flex gap-3">
+                <button onclick="resetPositions()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    Buchstaben zurücksetzen
+                </button>
+                <button onclick="resetAll()" class="px-6 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                    Alle Filter zurücksetzen
+                </button>
+            </div>
+
+            <!-- Info -->
+            <div class="mt-4 text-sm text-gray-600">
+                <span id="resultCount">0 Stempel gefunden</span>
+                <span class="text-gray-500 ml-2" id="filterInfo"></span>
+            </div>
+        </div>
+
+        <!-- Ergebnisse -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="results">
+            <!-- Wird dynamisch gefüllt -->
+        </div>
+
+        <!-- Keine Ergebnisse -->
+        <div id="noResults" class="bg-white rounded-xl shadow-lg p-12 text-center hidden">
+            <p class="text-gray-500 text-lg">
+                Keine Stempel gefunden
+            </p>
+            <p class="text-gray-400 text-sm mt-2">
+                Versuche eine andere Kombination oder ändere die Filter
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal für Bildanzeige -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 hidden" onclick="closeModal()">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800" id="modalTitle"></h3>
+                        <p class="text-gray-600 mt-1" id="modalText"></p>
+                        <p class="text-sm text-gray-500 mt-1" id="modalPlate"></p>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                        ✕
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="bg-gray-50 rounded-lg p-8 text-center">
+                    <img id="modalImage" class="mx-auto max-h-96 hidden" />
+                    <div id="modalPlaceholder">
+                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p class="text-gray-600 mb-2">Stempelbild</p>
+                        <p class="text-sm text-gray-500">(Bild kann hochgeladen werden)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stempeldaten
+        const stamps = [
+            { id: 'C10', text: 'ALVTINI', plate: 5, frame: 'rechteckig' },
+            { id: 'C11', text: 'AQVITANI', plate: 5, frame: 'rechteckig' },
+            { id: 'C12', text: 'OFCAL', plate: 5, frame: 'rechteckig' },
+            { id: 'C13', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C14', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C15', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C16', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C17', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C18', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C19', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C20', text: 'OF', plate: 5, frame: 'keine' },
+            { id: 'C21', text: 'OFCALVI', plate: 5, frame: 'rechteckig' },
+            { id: 'C38', text: 'OF', plate: 5, frame: 'rund' },
+            { id: 'C70', text: 'CARVFE', plate: 6, frame: 'rechteckig' },
+            { id: 'C72', text: 'OFCAST', plate: 6, frame: 'rechteckig' },
+            { id: 'C76', text: 'OFCAST', plate: 6, frame: 'rechteckig' },
+            { id: 'C77', text: 'OFCAST', plate: 6, frame: 'rechteckig' },
+            { id: 'C79', text: 'OFCAST', plate: 6, frame: 'rechteckig' },
+            { id: 'C81', text: 'OFCELADI', plate: 6, frame: 'rechteckig' },
+            { id: 'C83', text: 'OFCIVONI', plate: 6, frame: 'rechteckig' },
+            { id: 'C84', text: 'OFCRATO', plate: 6, frame: 'rechteckig' },
+            { id: 'C89', text: 'OFCVBVCI', plate: 6, frame: 'rechteckig' },
+            { id: 'C91', text: 'OFES', plate: 6, frame: 'rechteckig' },
+            { id: 'C93', text: 'OFIVNI', plate: 6, frame: 'rechteckig' },
+            { id: 'C94', text: 'OF', plate: 6, frame: 'rund' },
+            { id: 'C100', text: 'OFLVCRI', plate: 6, frame: 'rechteckig' },
+            { id: 'C104', text: 'OFMARI', plate: 6, frame: 'rechteckig' },
+            { id: 'C105', text: 'OF', plate: 6, frame: 'rund' },
+            { id: 'C106', text: 'OFMODO', plate: 6, frame: 'rechteckig' },
+            { id: 'S44', text: 'OFCIC', plate: 21, frame: 'rechteckig' },
+            { id: 'S46', text: 'OFCIC', plate: 21, frame: 'rechteckig' },
+            { id: 'S50', text: 'OFCIV', plate: 21, frame: 'rechteckig' },
+            { id: 'S58', text: 'OFFABI', plate: 21, frame: 'rechteckig' },
+            { id: 'S59', text: 'OFFABBI', plate: 21, frame: 'rechteckig' },
+            { id: 'S77', text: 'OFFABI', plate: 21, frame: 'rechteckig' },
+            { id: 'Y197', text: 'OFCIV', plate: 32, frame: 'rechteckig' },
+            { id: 'Y205', text: 'OFSABVI', plate: 32, frame: 'rechteckig' },
+            { id: 'Y215', text: 'OFFGENI', plate: 32, frame: 'rechteckig' },
+            { id: 'Z31', text: 'OFFABI', plate: 36, frame: 'rechteckig' }
+        ];
+
+        let currentLength = 7;
+        let positions = Array(10).fill('');
+        let frameFilter = 'alle';
+        let stampImages = {};
+
+        // Initialisierung
+        function init() {
+            updatePositionInputs();
+            filterStamps();
+        }
+
+        // Länge aktualisieren
+        function updateLength(value) {
+            currentLength = parseInt(value);
+            document.getElementById('lengthDisplay').textContent = currentLength;
+            positions = Array(10).fill('');
+            updatePositionInputs();
+            filterStamps();
+        }
+
+        // Positionseingaben erstellen
+        function updatePositionInputs() {
+            const container = document.getElementById('positionInputs');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < currentLength; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center';
+                
+                const label = document.createElement('span');
+                label.className = 'text-xs text-gray-500 mb-1';
+                label.textContent = i + 1;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                input.id = `position-${i}`;
+                input.className = 'position-input w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg uppercase';
+                input.placeholder = '?';
+                input.value = positions[i];
+                input.oninput = (e) => handlePositionChange(i, e.target.value);
+                input.onkeydown = (e) => handleKeyDown(i, e);
+                
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            }
+        }
+
+        // Position ändern
+        function handlePositionChange(index, value) {
+            positions[index] = value.toUpperCase();
+            document.getElementById(`position-${index}`).value = value.toUpperCase();
+            
+            if (value && index < currentLength - 1) {
+                const nextInput = document.getElementById(`position-${index + 1}`);
+                if (nextInput) nextInput.focus();
+            }
+            
+            filterStamps();
+        }
+
+        // Tastatur-Navigation
+        function handleKeyDown(index, e) {
+            if (e.key === 'Backspace' && !positions[index] && index > 0) {
+                const prevInput = document.getElementById(`position-${index - 1}`);
+                if (prevInput) prevInput.focus();
+            }
+        }
+
+        // Umrahmungsfilter setzen
+        function setFrameFilter(filter) {
+            frameFilter = filter;
+            
+            // Buttons aktualisieren
+            ['alle', 'rechteckig', 'rund', 'keine'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === filter) {
+                    btn.className = btn.className.replace(/bg-\w+-\d+/g, '');
+                    if (f === 'alle') btn.className += ' bg-amber-500 text-white shadow-md';
+                    else if (f === 'rechteckig') btn.className += ' bg-purple-500 text-white shadow-md';
+                    else if (f === 'rund') btn.className += ' bg-blue-500 text-white shadow-md';
+                    else btn.className += ' bg-gray-500 text-white shadow-md';
+                } else {
+                    btn.className = btn.className.replace(/bg-\w+-\d+/g, '');
+                    if (f === 'alle') btn.className += ' bg-gray-100 text-gray-700 hover:bg-gray-200';
+                    else if (f === 'rechteckig') btn.className += ' bg-purple-100 text-purple-800 hover:bg-purple-200';
+                    else if (f === 'rund') btn.className += ' bg-blue-100 text-blue-800 hover:bg-blue-200';
+                    else btn.className += ' bg-gray-100 text-gray-700 hover:bg-gray-200';
+                }
+            });
+            
+            filterStamps();
+        }
+
+        // Positionen zurücksetzen
+        function resetPositions() {
+            positions = Array(10).fill('');
+            updatePositionInputs();
+            filterStamps();
+        }
+
+        // Alles zurücksetzen
+        function resetAll() {
+            positions = Array(10).fill('');
+            frameFilter = 'alle';
+            setFrameFilter('alle');
+            updatePositionInputs();
+            filterStamps();
+        }
+
+        // Stempel filtern
+        function filterStamps() {
+            let filtered = stamps;
+            
+            // Nach Umrahmung filtern
+            if (frameFilter !== 'alle') {
+                filtered = filtered.filter(s => s.frame === frameFilter);
+            }
+            
+            // Nach Buchstaben filtern
+            const hasPositions = positions.some(p => p !== '');
+            if (hasPositions) {
+                filtered = filtered.map(stamp => {
+                    const result = positionMatch(stamp.text, positions, currentLength);
+                    return { ...stamp, ...result };
+                }).filter(s => s.matches);
+                
+                // Sortieren
+                filtered.sort((a, b) => {
+                    if (a.score !== b.score) return b.score - a.score;
+                    if (a.containsScore !== b.containsScore) return b.containsScore - a.containsScore;
+                    return 0;
+                });
+            }
+            
+            displayResults(filtered);
+        }
+
+        // Position Matching
+        function positionMatch(text, positions, length) {
+            const hasAnyPosition = positions.some(p => p !== '');
+            if (!hasAnyPosition) return { matches: true, score: 0, matchCount: 0, positionMatchCount: 0 };
+            
+            let positionMatchCount = 0;
+            let containsMatchCount = 0;
+            let totalPositions = 0;
+            
+            const enteredChars = [];
+            
+            for (let i = 0; i < length && i < positions.length; i++) {
+                if (positions[i] && positions[i] !== '') {
+                    totalPositions++;
+                    enteredChars.push({ char: positions[i].toUpperCase(), position: i });
+                }
+            }
+            
+            if (totalPositions === 0) return { matches: true, score: 0, matchCount: 0, positionMatchCount: 0 };
+            
+            for (let entry of enteredChars) {
+                if (entry.position < text.length && text[entry.position] === entry.char) {
+                    positionMatchCount++;
+                    containsMatchCount++;
+                } else if (text.includes(entry.char)) {
+                    containsMatchCount++;
+                }
+            }
+            
+            const shouldShow = containsMatchCount > 0;
+            const positionScore = positionMatchCount / totalPositions;
+            const containsScore = containsMatchCount / totalPositions;
+            
+            return {
+                matches: shouldShow,
+                score: positionScore,
+                containsScore: containsScore,
+                matchCount: containsMatchCount,
+                positionMatchCount: positionMatchCount,
+                totalPositions: totalPositions
+            };
+        }
+
+        // Ergebnisse anzeigen
+        function displayResults(filtered) {
+            const container = document.getElementById('results');
+            const noResults = document.getElementById('noResults');
+            const resultCount = document.getElementById('resultCount');
+            const filterInfo = document.getElementById('filterInfo');
+            
+            container.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                container.classList.add('hidden');
+                noResults.classList.remove('hidden');
+            } else {
+                container.classList.remove('hidden');
+                noResults.classList.add('hidden');
+                
+                filtered.forEach(stamp => {
+                    const card = createStampCard(stamp);
+                    container.appendChild(card);
+                });
+            }
+            
+            resultCount.textContent = `${filtered.length} ${filtered.length === 1 ? 'Stempel gefunden' : 'Stempel gefunden'}`;
+            
+            if (frameFilter !== 'alle') {
+                const filterText = frameFilter === 'rechteckig' ? 'rechteckige' : frameFilter === 'rund' ? 'runde' : 'ohne';
+                filterInfo.textContent = `• Nur ${filterText} Umrahmung`;
+            } else {
+                filterInfo.textContent = '';
+            }
+        }
+
+        // Stempelkarte erstellen
+        function createStampCard(stamp) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer transform hover:-translate-y-1';
+            card.onclick = () => openModal(stamp);
+            
+            let matchBadge = '';
+            if (stamp.totalPositions > 0) {
+                let badgeClass = 'bg-gray-200 text-gray-700';
+                let badgeText = `${stamp.matchCount}/${stamp.totalPositions} enthalten`;
+                
+                if (stamp.positionMatchCount === stamp.totalPositions) {
+                    badgeClass = 'bg-green-200 text-green-900';
+                } else if (stamp.positionMatchCount > 0) {
+                    badgeClass = 'bg-blue-200 text-blue-900';
+                    badgeText = `${stamp.positionMatchCount} an richtiger Stelle • ${badgeText}`;
+                }
+                
+                matchBadge = `<span class="text-xs px-2 py-1 rounded-full font-semibold ${badgeClass}">${badgeText}</span>`;
+            }
+            
+            let frameIcon = '';
+            let frameBadge = '';
+            if (stamp.frame === 'rechteckig') {
+                frameIcon = '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" stroke-width="2" rx="2"/></svg>';
+                frameBadge = `<span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">${frameIcon}Rechteckig</span>`;
+            } else if (stamp.frame === 'rund') {
+                frameIcon = '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/></svg>';
+                frameBadge = `<span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">${frameIcon}Rund</span>`;
+            } else {
+                frameBadge = '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">Keine Umrahmung</span>';
+            }
+            
+            card.innerHTML = `
+                <div class="bg-gradient-to-r from-amber-100 to-orange-100 p-4 border-b-2 border-amber-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-amber-800">Katalog-Nr: ${stamp.id}</span>
+                        <div class="flex items-center gap-2">
+                            ${matchBadge}
+                            <span class="text-xs bg-amber-200 text-amber-900 px-2 py-1 rounded-full">Platte ${stamp.plate}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-500 mb-1">Schriftzug:</div>
+                            <div class="text-xl font-bold text-gray-800 tracking-wider font-serif break-words">${stamp.text}</div>
+                            <div class="flex items-center gap-2 mt-2">
+                                <div class="text-xs text-gray-500">Länge: ${stamp.text.length}</div>
+                                <div class="text-xs">${frameBadge}</div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-32 h-20 bg-gray-100 rounded-lg border-2 border-gray-200 overflow-hidden flex items-center justify-center">
+                            ${stampImages[stamp.id] ? `<img src="${stampImages[stamp.id]}" class="w-full h-full object-cover" />` : `
+                            <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>`}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Modal öffnen
+        function openModal(stamp) {
+            document.getElementById('modalTitle').textContent = `Stempel ${stamp.id}`;
+            document.getElementById('modalText').innerHTML = `Schriftzug: <span class="font-serif font-bold text-xl">${stamp.text}</span>`;
+            document.getElementById('modalPlate').textContent = `Platte ${stamp.plate} • ${stamp.frame === 'rechteckig' ? 'Rechteckige Umrahmung' : stamp.frame === 'rund' ? 'Runde Umrahmung' : 'Keine Umrahmung'}`;
+            
+            const modalImage = document.getElementById('modalImage');
+            const placeholder = document.getElementById('modalPlaceholder');
+            
+            if (stampImages[stamp.id]) {
+                modalImage.src = stampImages[stamp.id];
+                modalImage.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                modalImage.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+            
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        // Modal schließen
+        function closeModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
