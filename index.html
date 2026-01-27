@@ -3,12 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archäologischer Stempel-Finder</title>
+    <title>Signum Romanum</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @font-face {
+            font-family: Samian;
+            src: url(Samian5-2.32/Samian5-2.32.woff)
+        }
+        
         .position-input:focus {
             outline: none;
             border-color: #f59e0b;
+        }
+
+        .font-samian {
+            font-family: Samian;
         }
     </style>
 </head>
@@ -20,7 +29,7 @@
                 🏛️ Signum Romanum
             </h1>
             <p class="text-gray-600">
-                Südgallische Terra Sigillata aus Vechten - Positionsbasierte Suche
+                Archäologischer Stempel-Finder
             </p>
         </div>
 
@@ -445,7 +454,7 @@
                     <div class="flex items-start gap-4">
                         <div class="flex-1">
                             <div class="text-xs text-gray-500 mb-1">Schriftzug:</div>
-                            <div class="text-xl font-bold text-gray-800 tracking-wider font-serif break-words">${stamp.text}</div>
+                            <div class="text-xl font-bold text-gray-800 tracking-wider font-samian break-words">${stamp.text}</div>
                             <div class="flex items-center gap-2 mt-2">
                                 <div class="text-xs text-gray-500">Länge: ${stamp.text.length}</div>
                                 <div class="text-xs">${frameBadge}</div>
@@ -467,7 +476,7 @@
         // Modal öffnen
         function openModal(stamp) {
             document.getElementById('modalTitle').textContent = `Stempel ${stamp.id}`;
-            document.getElementById('modalText').innerHTML = `Schriftzug: <span class="font-serif font-bold text-xl">${stamp.text}</span>`;
+            document.getElementById('modalText').innerHTML = `Schriftzug: <span class="font-samian font-bold text-xl">${stamp.text}</span>`;
             document.getElementById('modalPlate').textContent = `Platte ${stamp.plate} • ${stamp.frame === 'rechteckig' ? 'Rechteckige Umrahmung' : stamp.frame === 'rund' ? 'Runde Umrahmung' : 'Keine Umrahmung'}`;
             
             const modalImage = document.getElementById('modalImage');
