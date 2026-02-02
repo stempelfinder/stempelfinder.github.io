@@ -371,7 +371,7 @@
             const enteredChars = [];
             
             for (let i = 0; i < length && i < positions.length; i++) {
-                if (positions[i] && positions[i] !== ) {
+                if (positions[i] && positions[i] !== "") {
                     totalPositions++;
                     enteredChars.push({ char: positions[i].toUpperCase(), position: i });
                 }
@@ -426,7 +426,7 @@
             
             resultCount.textContent = `${filtered.length} ${filtered.length === 1 ? 'Stempel gefunden' : 'Stempel gefunden'}`;
             
-            filterInfo.textContent = ;
+            filterInfo.textContent = "";
         }
 
         // Stempelkarte erstellen
